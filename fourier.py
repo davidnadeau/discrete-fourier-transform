@@ -8,7 +8,10 @@ def readfile(file):
     #free file resource
     txt.close()
     #return samples
-    return samples
+    return {
+        "header": header,
+        "samples": samples
+    }
 
 def readheader(txt):
     return {
@@ -34,13 +37,23 @@ def readsamples(txt, samples):
 def readsample(txt):
     return txt.readline().split()
 
+#add n waves
+def foldwaves(waves):
+    #create empty wave to serve as an accumulator
+    result = emptywave(waves[0]['header']['samples'], waves[0]['header']['channels'])
+    for w in waves:
+        result = addwaves(result, w['samples'], w['header']['samples'], w['header']['channels'])
+    return result
+
 #add 2 waves, return single result wave
-def addWaves(a, b, channels):
-    return [[int (x[i]) + int (y[i]) for x, y in zip(a, b)] for i in range(channels)]
+def addwaves(a, b, samples, channels):
+    return [[int(a[i][j]) + int(b[i][j]) for j in range(channels)] for i in range(samples)]
+
+#create default empty wave for wave summation
+def emptywave(samples, channels):
+    return [[0 for i in range(channels)] for j in range(samples)]
 
 if __name__ == "__main__":
     w1 = readfile("w1.txt")
     w2 = readfile("w2.txt")
-    sumWave = addWaves(w1, w2, 2)
-    print(sumWave)
-    #readfile("gipsy.kings.hotel.california.txt")
+    print(foldwaves([w1,w2]))
