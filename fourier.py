@@ -47,24 +47,42 @@ def readsample(txt):
     return txt.readline().split()
 
 #####################################
+#   WRITE TO TEXT                   #
+#####################################
+def writewave(filename, w, wave):
+    file = open(filename, 'w+')
+    file.write(createheader(w))
+    for i in range(w['header']['samples']):
+        file.write(str(round(wave[i][0])))
+        if w['header']['channels'] == 2:
+           file.write('\t' + str(round(wave[i][1])) + '\n')
+        else:
+            file.write('\n')
+
+def createheader(w):
+    header =  "SAMPLES\t" + str(w['header']['samples']) + "\n"
+    header += "BITSPERSAMPLE:\t"+ str(w['header']['bps']) + "\n"
+    header += "CHANELS:\t"+ str(w['header']['channels']) + "\n" 
+    header += "SAMPLERATE:\t"+ str(w['header']['samplerate']) + "\n"
+    header += "NORMALIZED:\t"+ str(w['header']['normalized']) + "\n"
+    return header 
+
+#####################################
 #   SUMMING WAVES                   #
 #####################################
 
 #add n waves
-def foldwaves(waves):
-    #create empty wave to serve as an accumulator
-    result = emptywave(waves[0]['header']['samples'], waves[0]['header']['channels'])
+def foldwaves(waves, channels):
+    origwave = []
     for w in waves:
-        result = addwaves(result, w['samples'], w['header']['samples'], w['header']['channels'])
-    return result
-
-#add 2 waves, return single result wave
-def addwaves(a, b, samples, channels):
-    return [[int(a[i][j]) + int(b[i][j]) for j in range(channels)] for i in range(samples)]
-
-#create default empty wave for wave summation
-def emptywave(samples, channels):
-    return [[0 for i in range(channels)] for j in range(samples)]
+        ch = []
+        for c in range(channels):
+            value = 0
+            for s in w:
+                value += s[c]['amplitude']
+            ch.append(value)
+        origwave.append(ch)
+    return origwave 
 
 #####################################
 #   DISCRETE FOURIER TRANSFORM      #
@@ -76,43 +94,53 @@ def emptywave(samples, channels):
 # x[k] is sample at index k in wave table
 #####################################
 
-def reconstructdft(w):
-    T = w['header']['samples']
+def reconstructdft(w, T, channels):
+    return foldwaves(w, channels)
+
+def deconstructdft(w, T, channels):
+    waves = []
     for t in range(T):
-        print(t,":\t",w['samples'][t][0], '\t',deconstructdft(w, t)) 
+        harmonics = []
+        for n in range(1, round(T/2)):
+            c = []
+            for i in range(channels):
+                anot = a0(T, w, i)
+                an = getan(T, n, w, i)
+                bn = getbn(T, n, w, i)
+                p1 = an * math.cos((2*math.pi*n*t) / T)
+                p2 = bn * math.sin((2*math.pi*n*t) / T)
+                c.append({
+                    "number": t,
+                    "coefficients": {"a": an, "b": bn},
+                    "amplitude": p1 + p2 + anot
+                })
+            harmonics.append(c)
+        waves.append(harmonics) 
+    return waves
 
-def deconstructdft(w, t):
-    T = w['header']['samples']
-    x = w['samples']
-    sum = 0
-
-    for n in range(1, round(T/2)):
-        p1 = an(T, n, x) * math.cos((2*math.pi*n*t) / T)
-        p2 = bn(T, n, x) * math.sin((2*math.pi*n*t) / T)
-        sum += p1 + p2 + a0(T, x)
-    
-    return sum 
-
-def an(T, n, x):
+def getan(T, n, x, channel):
     sum = 0;
     for i in range(T):
-        sum += int(x[i][0])* math.cos( (2*math.pi*n*i) / T )
+        sum += int(x[i][channel])* math.cos( (2*math.pi*n*i) / T )
     return sum * (2/T)
 
-def bn(T, n, x):
+def getbn(T, n, x, channel):
     sum = 0;
     for i in range(T):
-        sum += int(x[i][0])* math.sin( (2*math.pi*n*i) / T )
+        sum += int(x[i][channel])* math.sin( (2*math.pi*n*i) / T )
     return sum * (2/T)
 
-def a0(T, x):
+def a0(T, x, channel):
     sum = 0;
     for i in range(T):
-        sum += int(x[i][0])
+        sum += int(x[i][channel])
     return sum * (1/T)
 
 if __name__ == "__main__":
-    w1 = readfile("w1.txt")
-    #w2 = readfile("w2.txt")
-    #print(foldwaves([w1,w2]))
-    reconstructdft(w1)
+    w1 = readfile("w2.txt")
+    print("Original wave:\n", w1['samples'], '\n')
+    dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], w1['header']['channels'])
+    #print("DFT waves:\n", dftwaves, '\n')
+    wave = reconstructdft(dftwaves, w1['header']['samples'], w1['header']['channels'])
+    print("Reconstructed wave:\n", wave, '\n')
+    writewave("tetwtwet", w1, wave)
