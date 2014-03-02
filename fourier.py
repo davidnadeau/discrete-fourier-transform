@@ -52,12 +52,13 @@ def readsample(txt):
 def writewave(filename, w, wave):
     file = open(filename, 'w+')
     file.write(createheader(w))
-    for i in range(w['header']['samples']):
+    for i in range(round(w['header']['samples']/2)):
         file.write(str(round(wave[i][0])))
         if w['header']['channels'] == 2:
            file.write('\t' + str(round(wave[i][1])) + '\n')
         else:
             file.write('\n')
+    file.close()
 
 def createheader(w):
     header =  "SAMPLES\t" + str(w['header']['samples']) + "\n"
@@ -99,9 +100,9 @@ def reconstructdft(w, T, channels):
 
 def deconstructdft(w, T, channels):
     waves = []
-    for t in range(T):
+    for t in range(round(T/2)):
         harmonics = []
-        for n in range(1, round(T/2)):
+        for n in range(1, round(T/100)):
             c = []
             for i in range(channels):
                 anot = a0(T, w, i)
@@ -116,6 +117,7 @@ def deconstructdft(w, T, channels):
                 })
             harmonics.append(c)
         waves.append(harmonics) 
+        print(len(waves))
     return waves
 
 def getan(T, n, x, channel):
@@ -137,7 +139,7 @@ def a0(T, x, channel):
     return sum * (1/T)
 
 if __name__ == "__main__":
-    w1 = readfile("w2.txt")
+    w1 = readfile("sine-440.txt")
     print("Original wave:\n", w1['samples'], '\n')
     dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], w1['header']['channels'])
     #print("DFT waves:\n", dftwaves, '\n')
