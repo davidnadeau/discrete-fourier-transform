@@ -3,6 +3,7 @@
 #Purpose:   recreate wave using DFT #
 #####################################
 import math
+import time
 #####################################
 #   READING FROM TEXT FILE          #
 #####################################
@@ -24,7 +25,7 @@ def readfile(file):
 
 def readheader(txt):
     return {
-        "samples":      int (readcolumn(txt, 1)),
+        "samples":      round(int (readcolumn(txt, 1))),
         "bps":          int (readcolumn(txt, 1)),
         "channels":     int (readcolumn(txt, 1)),
         "samplerate":   int (readcolumn(txt, 1)),
@@ -52,18 +53,18 @@ def readsample(txt):
 def writewave(filename, w, wave):
     file = open(filename, 'w+')
     file.write(createheader(w))
-    for i in range(round(w['header']['samples']/2)):
+    for i in range(round(w['header']['samples'])):
+        print(round(wave[i][0]))
         file.write(str(round(wave[i][0])))
         if w['header']['channels'] == 2:
-           file.write('\t' + str(round(wave[i][1])) + '\n')
-        else:
-            file.write('\n')
+           file.write('\t' + str(round(wave[i][1])))
+        file.write('\n')
     file.close()
 
 def createheader(w):
-    header =  "SAMPLES\t" + str(w['header']['samples']) + "\n"
+    header =  "SAMPLES:\t" + str(w['header']['samples']) + "\n"
     header += "BITSPERSAMPLE:\t"+ str(w['header']['bps']) + "\n"
-    header += "CHANELS:\t"+ str(w['header']['channels']) + "\n" 
+    header += "CHANNELS:\t"+ str(w['header']['channels']) + "\n" 
     header += "SAMPLERATE:\t"+ str(w['header']['samplerate']) + "\n"
     header += "NORMALIZED:\t"+ str(w['header']['normalized']) + "\n"
     return header 
@@ -75,6 +76,7 @@ def createheader(w):
 #add n waves
 def foldwaves(waves, channels):
     origwave = []
+    print(len (waves))
     for w in waves:
         ch = []
         for c in range(channels):
@@ -98,22 +100,22 @@ def foldwaves(waves, channels):
 def reconstructdft(w, T, channels):
     return foldwaves(w, channels)
 
-def deconstructdft(w, T, channels):
+def deconstructdft(w, T, quality,channels):
     waves = []
-    for t in range(round(T/2)):
+    for t in range(T):
         harmonics = []
-        for n in range(1, round(T/100)):
+        for n in range(1, quality):
             c = []
             for i in range(channels):
-                anot = a0(T, w, i)
+                a0 = geta0(T, w, i)
                 an = getan(T, n, w, i)
                 bn = getbn(T, n, w, i)
                 p1 = an * math.cos((2*math.pi*n*t) / T)
                 p2 = bn * math.sin((2*math.pi*n*t) / T)
                 c.append({
-                    "number": t,
+                    "number": n,
                     "coefficients": {"a": an, "b": bn},
-                    "amplitude": p1 + p2 + anot
+                    "amplitude": p1 + p2 + a0
                 })
             harmonics.append(c)
         waves.append(harmonics) 
@@ -132,7 +134,7 @@ def getbn(T, n, x, channel):
         sum += int(x[i][channel])* math.sin( (2*math.pi*n*i) / T )
     return sum * (2/T)
 
-def a0(T, x, channel):
+def geta0(T, x, channel):
     sum = 0;
     for i in range(T):
         sum += int(x[i][channel])
@@ -141,8 +143,9 @@ def a0(T, x, channel):
 if __name__ == "__main__":
     w1 = readfile("sine-440.txt")
     print("Original wave:\n", w1['samples'], '\n')
-    dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], w1['header']['channels'])
+    dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], round(w1['header']['samples']/2), w1['header']['channels'])
+
     #print("DFT waves:\n", dftwaves, '\n')
     wave = reconstructdft(dftwaves, w1['header']['samples'], w1['header']['channels'])
-    print("Reconstructed wave:\n", wave, '\n')
+    #print("Reconstructed wave:\n", wave, '\n')
     writewave("tetwtwet", w1, wave)
