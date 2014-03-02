@@ -1,3 +1,12 @@
+#####################################
+#Author:    David Nadeau            #
+#Purpose:   recreate wave using DFT #
+#####################################
+import math
+#####################################
+#   READING FROM TEXT FILE          #
+#####################################
+
 def readfile(file):
     #open file
     txt = open(file, "r")
@@ -37,6 +46,10 @@ def readsamples(txt, samples):
 def readsample(txt):
     return txt.readline().split()
 
+#####################################
+#   SUMMING WAVES                   #
+#####################################
+
 #add n waves
 def foldwaves(waves):
     #create empty wave to serve as an accumulator
@@ -53,7 +66,53 @@ def addwaves(a, b, samples, channels):
 def emptywave(samples, channels):
     return [[0 for i in range(channels)] for j in range(samples)]
 
+#####################################
+#   DISCRETE FOURIER TRANSFORM      #
+#####################################
+# t = time (from 0,...,T-1)
+# T = total # samples
+# f(t) is amplitude of wave at time t
+# n = harmonic number (max possible harmonic is T/2, or Nyquist frequency)
+# x[k] is sample at index k in wave table
+#####################################
+
+def reconstructdft(w):
+    T = w['header']['samples']
+    for t in range(T):
+        print(t,":\t",w['samples'][t][0], '\t',deconstructdft(w, t)) 
+
+def deconstructdft(w, t):
+    T = w['header']['samples']
+    x = w['samples']
+    sum = 0
+
+    for n in range(1, round(T/2)):
+        p1 = an(T, n, x) * math.cos((2*math.pi*n*t) / T)
+        p2 = bn(T, n, x) * math.sin((2*math.pi*n*t) / T)
+        sum += p1 + p2 + a0(T, x)
+    
+    return sum 
+
+def an(T, n, x):
+    sum = 0;
+    for i in range(T):
+        sum += int(x[i][0])* math.cos( (2*math.pi*n*i) / T )
+    return sum * (2/T)
+
+def bn(T, n, x):
+    sum = 0;
+    for i in range(T):
+        sum += int(x[i][0])* math.sin( (2*math.pi*n*i) / T )
+    return sum * (2/T)
+
+def a0(T, x):
+    sum = 0;
+    for i in range(T):
+        sum += int(x[i][0])
+    return sum * (1/T)
+
 if __name__ == "__main__":
     w1 = readfile("w1.txt")
-    w2 = readfile("w2.txt")
-    print(foldwaves([w1,w2]))
+    #w2 = readfile("w2.txt")
+    #print(foldwaves([w1,w2]))
+    reconstructdft(w1)
