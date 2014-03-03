@@ -2,7 +2,7 @@
 #Author:    David Nadeau            #
 #Purpose:   recreate wave using DFT #
 #####################################
-import fouriertransform
+import fouriertransform #some functions written in c for speed
 import math
 import time
 #####################################
@@ -28,9 +28,9 @@ def readfile(file):
 
 def readheader(txt):
 	return {
-		"samples":      int (int (readcolumn(txt, 1))/10),
+		"samples":      int (readcolumn(txt, 1)),
 		"bps":          int (readcolumn(txt, 1)),
-		"channels":     int (readcolumn(txt, 1)),
+		"channels":     int (readcolumn(txt, 1))-1,
 		"samplerate":   int (readcolumn(txt, 1)),
 		"normalized":   readcolumn(txt, 1)
 	}    
@@ -105,7 +105,9 @@ def reconstructdft(w, T, channels):
 def deconstructdft(w, T, quality, channels):
 	waves = []
         #written in c to calc a0
-	a0 = [fouriertransform.a0(w,T,0), fouriertransform.a0(w,T,1)]
+	a0 = [fouriertransform.a0(w,T,0)]
+        if channels == 2:
+            a0.append(fouriertransform.a0(w,T,1))
         print a0
 	for t in range(T):
 		harmonics = []
@@ -123,13 +125,13 @@ def deconstructdft(w, T, quality, channels):
 				})
 			harmonics.append(c)
 		waves.append(harmonics)
-                print len(waves)
+                print t 
 	return waves
 
 if __name__ == "__main__":
 	w1 = readfile("sine-440-short.txt")
-	print("Original wave:\n", w1['samples'], '\n')
-	dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], int(w1['header']['samples']/10), w1['header']['channels'])
+	print "Original wave:\n", w1['samples'], '\n'
+	dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], 100, w1['header']['channels'])
 
 	#print "DFT waves:\n", dftwaves, '\n'
 	wave = reconstructdft(dftwaves, w1['header']['samples'], w1['header']['channels'])
