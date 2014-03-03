@@ -2,11 +2,14 @@
 #Author:    David Nadeau            #
 #Purpose:   recreate wave using DFT #
 #####################################
+import fouriertransform
 import math
 import time
 #####################################
 #   READING FROM TEXT FILE          #
 #####################################
+
+
 
 def readfile(file):
     #open file
@@ -25,7 +28,7 @@ def readfile(file):
 
 def readheader(txt):
     return {
-        "samples":      round(int (readcolumn(txt, 1))),
+        "samples":      int (readcolumn(txt, 1)),
         "bps":          int (readcolumn(txt, 1)),
         "channels":     int (readcolumn(txt, 1)),
         "samplerate":   int (readcolumn(txt, 1)),
@@ -54,10 +57,9 @@ def writewave(filename, w, wave):
     file = open(filename, 'w+')
     file.write(createheader(w))
     for i in range(round(w['header']['samples'])):
-        print(round(wave[i][0]))
-        file.write(str(round(wave[i][0])))
+        file.write(str(int(wave[i][0])))
         if w['header']['channels'] == 2:
-           file.write('\t' + str(round(wave[i][1])))
+           file.write('\t' + str(int(wave[i][1])))
         file.write('\n')
     file.close()
 
@@ -76,7 +78,7 @@ def createheader(w):
 #add n waves
 def foldwaves(waves, channels):
     origwave = []
-    print(len (waves))
+    print len (waves)
     for w in waves:
         ch = []
         for c in range(channels):
@@ -106,10 +108,17 @@ def deconstructdft(w, T, quality,channels):
         harmonics = []
         for n in range(1, quality):
             c = []
+            an = 0
+            bn = 0
             for i in range(channels):
-                a0 = geta0(T, w, i)
-                an = getan(T, n, w, i)
-                bn = getbn(T, n, w, i)
+                for j in range(T):
+                    #written in c, included in header
+                    an += fouriertransform.an(int(w[j][i]), n, j)
+                    bn += fouriertransform.bn(int(w[j][i]), n, j)
+                a0 = geta0(T, w, i) 
+                an = an * (2/T) 
+                bn = bn * (2/T) 
+                
                 p1 = an * math.cos((2*math.pi*n*t) / T)
                 p2 = bn * math.sin((2*math.pi*n*t) / T)
                 c.append({
@@ -119,20 +128,8 @@ def deconstructdft(w, T, quality,channels):
                 })
             harmonics.append(c)
         waves.append(harmonics) 
-        print(len(waves))
+        print len(waves)
     return waves
-
-def getan(T, n, x, channel):
-    sum = 0;
-    for i in range(T):
-        sum += int(x[i][channel])* math.cos( (2*math.pi*n*i) / T )
-    return sum * (2/T)
-
-def getbn(T, n, x, channel):
-    sum = 0;
-    for i in range(T):
-        sum += int(x[i][channel])* math.sin( (2*math.pi*n*i) / T )
-    return sum * (2/T)
 
 def geta0(T, x, channel):
     sum = 0;
@@ -142,10 +139,10 @@ def geta0(T, x, channel):
 
 if __name__ == "__main__":
     w1 = readfile("sine-440.txt")
-    print("Original wave:\n", w1['samples'], '\n')
-    dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], round(w1['header']['samples']/2), w1['header']['channels'])
+    #print("Original wave:\n", w1['samples'], '\n')
+    dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], 2, w1['header']['channels'])
 
-    #print("DFT waves:\n", dftwaves, '\n')
+    #print "DFT waves:\n", dftwaves, '\n'
     wave = reconstructdft(dftwaves, w1['header']['samples'], w1['header']['channels'])
     #print("Reconstructed wave:\n", wave, '\n')
     writewave("tetwtwet", w1, wave)
