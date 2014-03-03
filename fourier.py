@@ -30,7 +30,7 @@ def readheader(txt):
 	return {
 		"samples":      int (readcolumn(txt, 1)),
 		"bps":          int (readcolumn(txt, 1)),
-		"channels":     int (readcolumn(txt, 1))-1,
+		"channels":     int (readcolumn(txt, 1)),
 		"samplerate":   int (readcolumn(txt, 1)),
 		"normalized":   readcolumn(txt, 1)
 	}    
@@ -78,7 +78,6 @@ def createheader(w):
 #add n waves
 def foldwaves(waves, channels):
 	origwave = []
-	print len (waves)
 	for w in waves:
 		ch = []
 		for c in range(channels):
@@ -109,6 +108,7 @@ def deconstructdft(w, T, quality, channels):
         if channels == 2:
             a0.append(fouriertransform.a0(w,T,1))
         print a0
+	file = open("out", 'w+')
 	for t in range(T):
 		harmonics = []
 		for n in range(1, quality):
@@ -123,15 +123,17 @@ def deconstructdft(w, T, quality, channels):
 					"coefficients": coefficients,
 					"amplitude": p1 + p2 + a0[i]
 				})
+                                file.write("Num: "+ str(t)+ " Chan: "+ str(i)+  " Harmonic: "+ str(n)+ " an: "+ str(coefficients[0])+ " bn: "+ str(coefficients[1]) + " Amp: "+ str(p1+p2+a0[i]) + '\n')
 			harmonics.append(c)
 		waves.append(harmonics)
-                print t 
+                print len(waves)
+        file.close()
 	return waves
 
 if __name__ == "__main__":
 	w1 = readfile("sine-440-short.txt")
 	print "Original wave:\n", w1['samples'], '\n'
-	dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], 100, w1['header']['channels'])
+	dftwaves = deconstructdft(w1['samples'], w1['header']['samples'], 5, w1['header']['channels'])
 
 	#print "DFT waves:\n", dftwaves, '\n'
 	wave = reconstructdft(dftwaves, w1['header']['samples'], w1['header']['channels'])
