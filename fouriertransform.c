@@ -3,18 +3,14 @@
 
 #define PI 3.14159265
 
-static PyObject *fourier_getcoefficients(PyObject *self, PyObject *args) {
-    int n;
+static PyObject *fourier_getcoefficients(PyObject *self, PyObject *args) 
+{
+    int n, i, T, channel;
+    char *samp;
+    double an = 0, bn = 0, samplevalue;
     PyObject *x;
     PyObject *samplechannels;
     PyObject *sample;
-    int T;
-    int channel;
-    int i;
-    double an = 0;
-    double bn = 0;
-    char *samp;
-    double samplevalue;
     
     if (!PyArg_ParseTuple(args, "Oiii", &x,  &n, &T, &channel)) {
         return NULL;
@@ -31,16 +27,14 @@ static PyObject *fourier_getcoefficients(PyObject *self, PyObject *args) {
     return Py_BuildValue("dd", an * (2.0/T), bn *(2.0/T));
 }
 
-static PyObject *fourier_a0(PyObject *self, PyObject *args) {
-    int n;
+static PyObject *fourier_a0(PyObject *self, PyObject *args)
+{
+    int n, i, T, channel;
+    char *samp;
+    double a0 = 0;
     PyObject *x;
     PyObject *samplechannels;
     PyObject *sample;
-    int T;
-    int channel;
-    int i;
-    double a0 = 0;
-    char *samp;
 
     if (!PyArg_ParseTuple(args, "Oii", &x, &T, &channel)) {
         return NULL;
